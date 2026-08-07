@@ -108,6 +108,8 @@ echo.
 echo Applying AdGuard DNS...
 netsh interface ipv4 set dnsservers name="%adapter%" static 94.140.14.14 primary validate=no >nul 2>&1
 netsh interface ipv4 add dnsservers name="%adapter%" 94.140.15.15 index=2 validate=no >nul 2>&1
+netsh interface ipv6 set dnsservers name="%adapter%" static 2a10:50c0::ad1:ff >nul 2>&1
+netsh interface ipv6 add dnsservers name="%adapter%" 2a10:50c0::ad2:ff index=2 >nul 2>&1
 echo DNS successfully changed to AdGuard!
 pause
 goto Menu
@@ -117,6 +119,8 @@ echo.
 echo Applying Quad9 DNS...
 netsh interface ipv4 set dnsservers name="%adapter%" static 9.9.9.9 primary validate=no >nul 2>&1
 netsh interface ipv4 add dnsservers name="%adapter%" 149.112.112.112 index=2 validate=no >nul 2>&1
+netsh interface ipv6 set dnsservers name="%adapter%" static 2620:fe::fe >nul 2>&1
+netsh interface ipv6 add dnsservers name="%adapter%" 2620:fe::9 index=2 >nul 2>&1
 echo DNS successfully changed to Quad9!
 pause
 goto Menu
@@ -124,34 +128,35 @@ goto Menu
 :PingAll
 cls
 echo ==========================================================
-echo                  Running Ping Tests (PowerShell)
+echo                  Running Ping Tests
 echo ==========================================================
 echo.
 
-echo Pinging Cloudflare (1.1.1.1)...
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
-"try { $avg=(Test-Connection -ComputerName '1.1.1.1' -Count 4 -ErrorAction Stop | Measure-Object -Property ResponseTime -Average).Average; if ($null -eq $avg) { Write-Output 'No replies' } else { Write-Output ('Average = {0:N2} ms' -f $avg) } } catch { Write-Output 'Request timed out or host unreachable' }"
+call :DoPing "Cloudflare" 1.1.1.1
+call :DoPing "Google" 8.8.8.8
+call :DoPing "AdGuard" 94.140.14.14
+call :DoPing "Quad9" 9.9.9.9
 
-echo.
-echo Pinging Google (8.8.8.8)...
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
-"try { $avg=(Test-Connection -ComputerName '8.8.8.8' -Count 4 -ErrorAction Stop | Measure-Object -Property ResponseTime -Average).Average; if ($null -eq $avg) { Write-Output 'No replies' } else { Write-Output ('Average = {0:N2} ms' -f $avg) } } catch { Write-Output 'Request timed out or host unreachable' }"
-
-echo.
-echo Pinging AdGuard (94.140.14.14)...
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
-"try { $avg=(Test-Connection -ComputerName '94.140.14.14' -Count 4 -ErrorAction Stop | Measure-Object -Property ResponseTime -Average).Average; if ($null -eq $avg) { Write-Output 'No replies' } else { Write-Output ('Average = {0:N2} ms' -f $avg) } } catch { Write-Output 'Request timed out or host unreachable' }"
-
-echo.
-echo Pinging Quad9 (9.9.9.9)...
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
-"try { $avg=(Test-Connection -ComputerName '9.9.9.9' -Count 4 -ErrorAction Stop | Measure-Object -Property ResponseTime -Average).Average; if ($null -eq $avg) { Write-Output 'No replies' } else { Write-Output ('Average = {0:N2} ms' -f $avg) } } catch { Write-Output 'Request timed out or host unreachable' }"
-
-echo.
 echo ==========================================================
 echo Ping test complete. Lower average time is better.
 pause
 goto Menu
+
+:DoPing
+setlocal
+set "pname=%~1"
+set "ip=%~2"
+echo Pinging %pname% (%ip%)...
+set "avg="
+for /f "tokens=4 delims==" %%A in ('ping -n 4 %ip% ^| findstr /C:"Average"') do set "avg=%%A"
+if not defined avg (
+    echo     Request timed out or host unreachable
+) else (
+    echo     Average =%avg%
+)
+echo.
+endlocal
+goto :eof
 
 :Reset
 echo.
