@@ -1,99 +1,67 @@
-# DNS Tool
+# DNS Switcher Tool
 
-A small interactive Windows batch script to quickly switch your active network adapter's DNS settings to popular public DNS providers, run ping tests against them, or reset DNS back to automatic (DHCP). The script detects an active adapter, requests elevation if not run as Administrator, and provides a simple menu-driven interface.
+A tiny Windows batch utility to quickly switch your active network adapter's DNS servers between popular public, privacy-focused, and security-focused providers.
 
-## Features
+This repository contains `dns-tool.bat` — a single-file interactive script that:
 
-- Apply Cloudflare, Google, AdGuard, or Quad9 DNS (IPv4 and where provided, IPv6)
-- Ping-test all DNS providers (averaged response) using PowerShell's Test-Connection
-- Automatically detect the first active (Connected) network adapter, with fallbacks
-- Reset DNS to automatic (DHCP)
-- Displays a GitHub link and a colored console header
+- Detects the first connected network adapter (with fallbacks).
+- Requests elevation to Administrator when needed.
+- Applies IPv4 and IPv6 DNS servers for selected providers.
+- Runs simple ping benchmarks against DNS endpoints.
+- Resets DNS back to Automatic (DHCP).
 
-## Requirements
+---
 
-- Windows 10 / 11 (or other modern Windows with netsh and PowerShell)
-- Must be run with Administrative privileges (the script requests elevation automatically)
-- netsh and PowerShell must be available on PATH (default on Windows)
+## Quick start
 
-## Installation
+1. Download or copy `dns-tool.bat` into a folder on your Windows machine.
+2. Right-click and choose "Run as administrator" or simply double-click the file — the script will prompt to re-run elevated if required.
+3. Choose an option from the menu to apply a DNS provider, run ping tests, or reset to DHCP.
 
-1. Copy the script contents into a file named `dns-tool.bat` (or any `.bat` filename).
-2. Place the file where you want to run it (e.g., your user folder or desktop).
-3. Right-click and Run as administrator, or simply run the file — the script will request elevation if needed.
+Note: Administrative privileges are required to change network adapter settings.
 
-## Usage
+---
 
-1. Run `dns-tool.bat` (run elevated).
-2. Use the numbered menu to choose:
-   - 1: Cloudflare DNS (1.1.1.1, 1.0.0.1; IPv6: 2606:4700:4700::1111, 2606:4700:4700::1001)
-   - 2: Google Public DNS (8.8.8.8, 8.8.4.4; IPv6: 2001:4860:4860::8888, 2001:4860:4860::8844)
-   - 3: AdGuard DNS (94.140.14.14, 94.140.15.15)
-   - 4: Quad9 DNS (9.9.9.9, 149.112.112.112)
-   - 5: Ping Test All DNS Servers (runs four pings and shows average response time)
-   - 6: Reset DNS to Automatic (DHCP)
-   - 7: Exit
+## Menu options
 
-After applying a change, the script pauses so you can view status messages.
+1. Cloudflare DNS — 1.1.1.1 / 1.0.0.1 (IPv6: 2606:4700:4700::1111 / 2606:4700:4700::1001)
+2. Google Public DNS — 8.8.8.8 / 8.8.4.4 (IPv6: 2001:4860:4860::8888 / 2001:4860:4860::8844)
+3. AdGuard DNS — 94.140.14.14 / 94.140.15.15 (IPv6 entries where available)
+4. Quad9 — 9.9.9.9 / 149.112.112.112 (IPv6 entries where available)
+5. Ping Test — runs 4 pings and reports average latency for each provider
+6. Reset — reset DNS to Automatic (DHCP) for the selected adapter
+7. Exit
 
-## How adapter detection works
+---
 
-The script attempts to find the first interface listed as "Connected" using `netsh interface show interface`. It parses that output for the first interface name and uses it as the target adapter. If no connected interface is found, it falls back to the named adapter "Wi-Fi". If the inferred adapter name doesn't exist, the script falls back again to the first listed interface in the `netsh` output.
+## How it detects the adapter
 
-If the script picks the wrong adapter for your system, you can:
-- Edit the script and set the preferred adapter string manually by adding a line near the top:
-  set "adapter=Ethernet" (replace with your adapter's exact name)
-- Or run `netsh interface show interface` in a command prompt to find the correct adapter name and then re-run the script.
+- The script parses the output of `netsh interface show interface` and selects the first interface listed as "Connected".
+- If no connected adapter is found, it falls back to `Wi-Fi`, and finally to the first listed interface.
+- If you prefer a specific adapter, edit the script and set `adapter` near the top, e.g. `set "adapter=Ethernet"`.
 
-## Implementation notes & safety
+---
 
-- The script requires Administrator privileges because it modifies network interface settings.
-- It uses `netsh interface ipv4 set dnsservers ...` and `netsh interface ipv6 set dnsservers ...` to apply DNS server addresses.
-- The `validate=no` flag is used for IPv4 netsh calls to avoid DNS server reachability validation during the change.
-- Running this script will change network configuration for the selected adapter. Only run it if you are comfortable modifying network settings.
-- If you rely on corporate VPNs, static DNS pushed by system policy, or domain-joined group policy, this script may be overridden by system or network policies.
+## Notes & troubleshooting
 
-## Ping tests
+- The script uses `netsh` to set DNS entries and will use `validate=no` on IPv4 commands to avoid validation failures on some systems.
+- After changing DNS, you can run `ipconfig /flushdns` to clear the DNS resolver cache.
+- If changes do not persist, group policies, VPN clients, or corporate tools may be overriding settings.
+- If the ping tests show timeouts, ICMP may be filtered on your network or the DNS endpoint may be unreachable.
 
-The script uses PowerShell's `Test-Connection` to ping each DNS provider 4 times and prints the average response time (ms). Lower average is better for latency-sensitive tasks like gaming or interactive apps.
-
-## Troubleshooting
-
-- "Adapter not found" or unexpected adapter selected:
-  - Run `netsh interface show interface` and verify interface names.
-  - Edit the script to set the adapter variable explicitly if needed.
-- DNS change doesn't take effect:
-  - Verify you ran the script as Administrator.
-  - Some enterprise/network policies may block or override DNS settings.
-  - Try disabling/re-enabling the adapter or restarting the machine.
-- Ping tests show "Request timed out or host unreachable":
-  - There may be network-level blocking, firewalls, or the host may be unreachable from your network.
-
-## Supported DNS providers and addresses
-
-- Cloudflare
-  - IPv4: 1.1.1.1 (primary), 1.0.0.1 (secondary)
-  - IPv6: 2606:4700:4700::1111, 2606:4700:4700::1001
-- Google Public DNS
-  - IPv4: 8.8.8.8 (primary), 8.8.4.4 (secondary)
-  - IPv6: 2001:4860:4860::8888, 2001:4860:4860::8844
-- AdGuard
-  - IPv4: 94.140.14.14 (primary), 94.140.15.15 (secondary)
-- Quad9
-  - IPv4: 9.9.9.9 (primary), 149.112.112.112 (secondary)
+---
 
 ## Contributing
 
-- Pull requests and suggestions are welcome. If you want a new provider added or an enhancement (like listing adapters to choose from interactively), open an issue or submit a PR to the repository.
-- Keep changes Windows-compatible and keep the elevation/request flow intact.
+- Feature requests, bug reports, and PRs are welcome.
+- Ideas: better adapter selection UI, list adapters to choose from, extra DNS providers, or PowerShell equivalent script.
+
+---
 
 ## License
 
-MIT License — see LICENSE file (or add your preferred license).
-
-## Acknowledgements
-
-Script header prints a GitHub link:
-https://github.com/dev-fahim-code
+No license file is included by default. Add a LICENSE file (MIT, Apache-2.0, etc.) if you want to permit reuse or contributions.
 
 ---
+
+Author: Dev-Fahim-Code — https://github.com/dev-fahim-code
