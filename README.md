@@ -1,67 +1,70 @@
-# DNS Switcher Tool
+# Dev-Fahim-Code DNS Tool
 
-A tiny Windows batch utility to quickly switch your active network adapter's DNS servers between popular public, privacy-focused, and security-focused providers.
+A lightweight, interactive Windows batch script for quickly switching your DNS servers between popular public DNS providers, running latency tests, and resetting back to automatic (DHCP) — all from a simple command-line menu.
 
-This repository contains `dns-tool.bat` — a single-file interactive script that:
+## Features
 
-- Detects the first connected network adapter (with fallbacks).
-- Requests elevation to Administrator when needed.
-- Applies IPv4 and IPv6 DNS servers for selected providers.
-- Runs simple ping benchmarks against DNS endpoints.
-- Resets DNS back to Automatic (DHCP).
+- 🔒 **Auto-elevation** — automatically requests Administrator privileges (required to change network settings)
+- 🌐 **Auto-detects** your active network adapter (Wi-Fi, Ethernet, etc.), with sensible fallbacks
+- ⚡ **One-click DNS switching** for 4 popular providers, configured for both IPv4 and IPv6
+- 📊 **Built-in ping test** to compare latency across all providers before choosing one
+- ↩️ **Easy reset** back to automatic, DHCP-assigned DNS
+- 🎨 Simple colored console menu — no installation or dependencies required
 
----
+## Supported DNS Providers
 
-## Quick start
+| # | Provider | Primary | Secondary | Best For |
+|---|----------|---------|-----------|----------|
+| 1 | Cloudflare | `1.1.1.1` | `1.0.0.1` | Gaming & Speed |
+| 2 | Google Public DNS | `8.8.8.8` | `8.8.4.4` | General Stability & Routing |
+| 3 | AdGuard DNS | `94.140.14.14` | `94.140.15.15` | Blocking Ads & Trackers |
+| 4 | Quad9 | `9.9.9.9` | `149.112.112.112` | Security & Threat Prevention |
 
-1. Download or copy `dns-tool.bat` into a folder on your Windows machine.
-2. Right-click and choose "Run as administrator" or simply double-click the file — the script will prompt to re-run elevated if required.
-3. Choose an option from the menu to apply a DNS provider, run ping tests, or reset to DHCP.
+Each option also configures the matching IPv6 addresses automatically.
 
-Note: Administrative privileges are required to change network adapter settings.
+## Requirements
 
----
+- Windows 10 or 11
+- Administrator privileges (the script prompts for elevation automatically via UAC)
 
-## Menu options
+## Usage
 
-1. Cloudflare DNS — 1.1.1.1 / 1.0.0.1 (IPv6: 2606:4700:4700::1111 / 2606:4700:4700::1001)
-2. Google Public DNS — 8.8.8.8 / 8.8.4.4 (IPv6: 2001:4860:4860::8888 / 2001:4860:4860::8844)
-3. AdGuard DNS — 94.140.14.14 / 94.140.15.15 (IPv6 entries where available)
-4. Quad9 — 9.9.9.9 / 149.112.112.112 (IPv6 entries where available)
-5. Ping Test — runs 4 pings and reports average latency for each provider
-6. Reset — reset DNS to Automatic (DHCP) for the selected adapter
+1. Download the script (e.g. `dns-tool.bat`).
+2. Double-click to run, or launch it from Command Prompt.
+3. Accept the UAC prompt when asked to allow administrative changes.
+4. Choose an option from the menu:
+
+```
+1. Cloudflare DNS      (Best for Gaming & Speed)
+2. Google Public DNS   (Best for General Stability & Routing)
+3. AdGuard DNS         (Best for Blocking Ads & Trackers)
+4. Quad9 DNS           (Best for Security & Threat Prevention)
+5. Ping Test All DNS Servers
+6. Reset DNS to Automatic (DHCP)
 7. Exit
+```
 
----
+## How It Works
 
-## How it detects the adapter
+- **Adapter detection**: parses `netsh interface show interface` to find the first `Connected` adapter. If detection fails, it falls back to an adapter named `Wi-Fi`, then to the first interface listed by `netsh`.
+- **Applying DNS**: uses `netsh interface ipv4 set/add dnsservers` and `netsh interface ipv6 set/add dnsservers` to set primary and secondary servers for the detected adapter.
+- **Ping test**: runs `ping -n 4` against each provider and extracts the reported average round-trip time, so you can compare latency at a glance.
+- **Reset**: switches the adapter back to `dhcp`, restoring automatically assigned DNS servers.
 
-- The script parses the output of `netsh interface show interface` and selects the first interface listed as "Connected".
-- If no connected adapter is found, it falls back to `Wi-Fi`, and finally to the first listed interface.
-- If you prefer a specific adapter, edit the script and set `adapter` near the top, e.g. `set "adapter=Ethernet"`.
+## Notes
 
----
+- Only the detected active adapter is modified — other adapters are left untouched.
+- If your adapter isn't detected correctly, you can edit the fallback name (`Wi-Fi`) near the top of the script to match your system (e.g. `Ethernet`).
+- The script only changes DNS server settings; it does not alter any other network configuration.
 
-## Notes & troubleshooting
+## Disclaimer
 
-- The script uses `netsh` to set DNS entries and will use `validate=no` on IPv4 commands to avoid validation failures on some systems.
-- After changing DNS, you can run `ipconfig /flushdns` to clear the DNS resolver cache.
-- If changes do not persist, group policies, VPN clients, or corporate tools may be overriding settings.
-- If the ping tests show timeouts, ICMP may be filtered on your network or the DNS endpoint may be unreachable.
+This tool modifies system-level network settings and requires administrator access to run. Use at your own risk. If you experience connectivity issues after a change, use **option 6** at any time to revert to automatic, DHCP-assigned DNS.
 
----
+## Author
 
-## Contributing
-
-- Feature requests, bug reports, and PRs are welcome.
-- Ideas: better adapter selection UI, list adapters to choose from, extra DNS providers, or PowerShell equivalent script.
-
----
+[dev-fahim-code](https://github.com/dev-fahim-code)
 
 ## License
 
-No license file is included by default. Add a LICENSE file (MIT, Apache-2.0, etc.) if you want to permit reuse or contributions.
-
----
-
-Author: Dev-Fahim-Code — https://github.com/dev-fahim-code
+MIT License — feel free to use, modify, and distribute.
