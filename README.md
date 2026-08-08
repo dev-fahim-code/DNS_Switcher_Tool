@@ -1,6 +1,6 @@
 # Dev-Fahim-Code DNS Tool
 
-A lightweight, interactive Windows batch script for quickly switching your DNS servers between popular public DNS providers, running latency tests, and resetting back to automatic (DHCP) — all from a simple menu. No installation required.
+A lightweight, interactive Windows batch script for quickly switching your DNS servers between popular public DNS providers, running latency tests, and resetting back to automatic (DHCP) — all from a simple command-line menu.
 
 ## Features
 
@@ -45,9 +45,21 @@ Each option also configures the matching IPv6 addresses automatically.
 8. Exit
 ```
 
+## Screenshots
+
+### Main Menu with Active Adapter Detection
+Shows the interactive menu with detected network adapter (Ethernet) and current DNS configuration for both IPv4 and IPv6.
+
+![Main Menu Screenshot](images/main-menu.png)
+
+### Ping Test Results
+Displays latency comparison across all DNS providers to help you choose the fastest option.
+
+![Ping Test Screenshot](images/ping-test.png)
+
 ## How It Works
 
-- **Adapter detection**: automatically detects all connected network adapters using `netsh interface show interface`, classifying them as Ethernet, Wi-Fi, or Other. The user can select their preferred adapter from the menu, or the script uses the first detected adapter.
+- **Adapter detection**: automatically detects all connected network adapters using `netsh interface show interface`, classifying them as Ethernet, Wi-Fi, or Other. The user can select their preferred adapter at startup.
 - **Applying DNS**: uses `netsh interface ipv4 set/add dnsservers` and `netsh interface ipv6 set/add dnsservers` to set primary and secondary servers for the selected adapter.
 - **Ping test**: runs `ping -n 4` against each provider and extracts the reported average round-trip time, so you can compare latency at a glance before choosing a DNS provider.
 - **Reset**: switches the adapter back to `dhcp`, restoring automatically assigned DNS servers.
@@ -86,7 +98,7 @@ The script automatically requests Administrator privileges on startup. If not ru
 
 ## Disclaimer
 
-This tool modifies system-level network settings and requires administrator access to run. Use at your own risk. If you experience connectivity issues after a change, use **option 7** at any time to reset to automatic DNS. Always ensure you have a backup connection method if troubleshooting network settings.
+This tool modifies system-level network settings and requires administrator access to run. Use at your own risk. If you experience connectivity issues after a change, use **option 7** at any time to restore automatic DHCP DNS settings.
 
 ## License
 
