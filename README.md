@@ -50,12 +50,12 @@ Each option also configures the matching IPv6 addresses automatically.
 ### Main Menu with Active Adapter Detection
 Shows the interactive menu with detected network adapter (Ethernet) and current DNS configuration for both IPv4 and IPv6.
 
-![Main Menu Screenshot](images/main-menu.png)
+![image](https://github.com/dev-fahim-code/DNS_Switcher_Tool/blob/main/main-menu.png)
 
 ### Ping Test Results
 Displays latency comparison across all DNS providers to help you choose the fastest option.
 
-![Ping Test Screenshot](images/ping-test.png)
+![image](https://github.com/dev-fahim-code/DNS_Switcher_Tool/blob/main/ping-test.png)
 
 ## How It Works
 
