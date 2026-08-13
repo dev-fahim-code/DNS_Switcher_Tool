@@ -11,8 +11,9 @@ A lightweight, interactive Windows batch script for quickly switching your DNS s
 - ⚡ **One-click DNS switching** — instantly apply DNS settings for 4 popular providers, configured for both IPv4 and IPv6
 - 📊 **Built-in ping test** — compare latency across all DNS providers to find the fastest option
 - ↩️ **Easy reset** — restore automatic, DHCP-assigned DNS with a single command
+- 🛠️ **Full network reset** — one-step Winsock reset, TCP/IP stack repair, IP release/renew, and DNS flush for deeper connectivity issues
 - 🎨 **Simple colored console UI** — red text on black background, no installation or dependencies required
-- ✅ **Zero persistence** — all changes are in-memory and can be reset anytime
+- ✅ **Minimal footprint** — DNS changes are applied live via `netsh` and can be reset anytime (see [Safety & Reversibility](#safety--reversibility) for the one exception)
 
 ## Supported DNS Providers
 
@@ -67,7 +68,7 @@ Displays latency comparison across all DNS providers to help you choose the fast
 
 ```
 ==========================================================
-              DNS_Switcher_Tool
+              DNS_Switcher_Tool(v_0.2)
              https://github.com/dev-fahim-code
 ==========================================================
 
@@ -86,7 +87,8 @@ IPv6:
 5. Ping Test All DNS Servers
 6. Change Network Adapter
 7. Reset DNS to Automatic (DHCP)
-8. Exit
+8. Full Network Reset (Winsock, TCP/IP, IP Release/Renew, Flush DNS)
+9. Exit
 ```
 
 ### Option 1-4: Apply DNS
@@ -162,7 +164,59 @@ Restores your adapter to automatically assigned (DHCP) DNS servers:
 - Useful if you want to go back to your ISP's DNS or if you experience issues
 - Displays current DNS after reset
 
-### Option 8: Exit
+### Option 8: Full Network Reset
+
+Runs a deeper repair sequence for connectivity issues that a simple DNS change won't fix — for example, when the network stack itself is misbehaving rather than just DNS resolution. Unlike Options 1-7, **this affects the whole machine, not just the selected adapter.**
+
+Steps performed, in order:
+
+1. `netsh winsock reset` — resets the Winsock catalog (fixes many "can't connect" failures)
+2. `netsh int ip reset` — repairs the TCP/IP stack
+3. `ipconfig /release` — drops the current IP lease
+4. `ipconfig /renew` — requests a new IP lease
+5. `ipconfig /flushdns` — clears the local DNS resolver cache
+
+- You're asked to confirm (`Y/N`) before anything runs
+- Your network connection will drop briefly during the process
+- After completion, you're prompted to restart immediately (`shutdown /r /t 10`, cancelable with `Ctrl+C`) or restart manually later — **a restart is strongly recommended** so the Winsock and TCP/IP changes fully take effect
+- See [Safety & Reversibility](#safety--reversibility) below for what makes this option different from the rest of the tool
+
+**Example Output:**
+```
+==========================================================
+                 Full Network Reset
+==========================================================
+
+This will run, in order:
+  1. netsh winsock reset      (fix connection failures)
+  2. netsh int ip reset       (repair TCP/IP stack)
+  3. ipconfig /release        (drop current IP)
+  4. ipconfig /renew          (request new IP)
+  5. ipconfig /flushdns       (clear DNS cache)
+
+Your network connection will drop briefly during this
+process. A RESTART is recommended afterward so the
+Winsock and TCP/IP changes fully take effect.
+
+Proceed with Full Network Reset? (Y/N): y
+
+[1/5] Resetting Winsock catalog...
+[2/5] Resetting TCP/IP stack...
+[3/5] Releasing current IP address...
+[4/5] Renewing IP address...
+[5/5] Flushing DNS resolver cache...
+
+Full network reset complete!
+
+----------------------------------------------------------
+ A RESTART is strongly recommended now so the Winsock
+ and TCP/IP changes fully apply.
+----------------------------------------------------------
+
+Restart the PC now? (Y/N):
+```
+
+### Option 9: Exit
 
 Closes the script cleanly.
 
@@ -269,22 +323,44 @@ netsh interface ipv4 set dnsservers name="%adapter%" dhcp
 netsh interface ipv6 set dnsservers name="%adapter%" dhcp
 ```
 
+### 9. Full Network Reset (`:FullReset`)
+
+After a `Y/N` confirmation prompt, runs the full repair sequence machine-wide (not scoped to `%adapter%`):
+
+```batch
+netsh winsock reset
+netsh int ip reset
+ipconfig /release
+ipconfig /renew
+ipconfig /flushdns
+```
+
+Then offers an optional restart:
+
+```batch
+shutdown /r /t 10 /c "Restarting to complete network reset..."
+```
+
+The 10-second countdown can be canceled with `Ctrl+C` in the console window.
+
 ---
 
 ## Important Notes
 
 ### Scope of Changes
 
-- **Only the selected adapter is modified** — other network adapters remain untouched
-- All changes are applied immediately without requiring a system restart
+- **Options 1-7 only affect the selected adapter** — other network adapters remain untouched
+- **Option 8 (Full Network Reset) is machine-wide**, not adapter-scoped — `netsh winsock reset`, `netsh int ip reset`, and the `ipconfig /release` / `/renew` calls act on the system's network stack as a whole, not just the adapter chosen in the menu
+- All changes are applied immediately without requiring a system restart (except Option 8, where a restart is recommended to fully apply the Winsock/TCP-IP reset)
 - Changes persist until manually reset or modified again
 
 ### Safety & Reversibility
 
-- **No registry modifications** — all changes use `netsh` commands which are temporary and reversible
-- **No persistent files** — everything runs in-memory
-- **Easy reset** — use Option 7 at any time to restore DHCP assignment
-- **No auto-persistence** — settings are lost if the adapter is disabled/re-enabled or the system reboots (unless you run the script again)
+- **DNS changes (Options 1-4, 7) use only `netsh`** and make no registry modifications — they're temporary and reversible with Option 7 at any time
+- **Option 8 does touch the Windows registry** — `netsh winsock reset` rewrites the Winsock catalog, and `netsh int ip reset` resets several TCP/IP registry keys. These are standard, well-documented Windows repair operations, but they are a deeper change than anything else in the tool and are why a restart is recommended afterward
+- **No persistent files are written by the script itself** — all DNS/adapter state lives in Windows' own network configuration, not in files created by this tool
+- **Easy reset** — use Option 7 at any time to restore DHCP-assigned DNS
+- **No auto-persistence of DNS settings** — DNS settings are lost if the adapter is disabled/re-enabled or the system reboots (unless you run the script again); this does not apply to Option 8, whose Winsock/TCP-IP changes are intended to persist across reboots
 
 ### Troubleshooting
 
@@ -296,6 +372,7 @@ netsh interface ipv6 set dnsservers name="%adapter%" dhcp
 | No internet after DNS change | Use Option 7 to reset to DHCP, or restart your router |
 | Adapter not recognized | Use Option 6 to manually select from the list, or check adapter name in Network Settings |
 | Ping test shows timeout | The DNS provider may be unreachable on your network; try a different one |
+| DNS reset didn't fix connectivity | Try Option 8 (Full Network Reset) for deeper stack-level issues, then restart |
 
 ---
 
@@ -341,6 +418,7 @@ The script uses `setlocal EnableDelayedExpansion` to support dynamic variable ac
 3. **Special Characters** — Adapter names with special characters (quotes, pipes, etc.) may cause issues
 4. **Offline Adapters** — Only "Connected" adapters are detected; disabled adapters are skipped
 5. **IPv6 Validation** — IPv6 DNS validation is not disabled (`validate=yes` by default), which may cause slower application on some systems
+6. **Full Network Reset is machine-wide** — Option 8 is not limited to the selected adapter and briefly interrupts all network connectivity on the system
 
 ---
 
@@ -353,6 +431,7 @@ The script uses `setlocal EnableDelayedExpansion` to support dynamic variable ac
 - If you experience connectivity issues after a change, **use Option 7** to reset to DHCP
 - Always test with Option 5 before committing to a new DNS provider
 - Some networks or ISPs may block or throttle certain DNS providers
+- **Option 8 (Full Network Reset) affects your entire network stack**, not just the DNS settings this tool otherwise manages — only use it if you understand what a Winsock/TCP-IP reset does, and expect to restart afterward
 
 ---
 
@@ -379,6 +458,12 @@ For issues, feature requests, or just to chat:
 ---
 
 ## Changelog
+
+### Version 0.2
+
+- ✅ Added Option 8: Full Network Reset (Winsock reset, TCP/IP stack reset, IP release/renew, DNS flush)
+- ✅ Added confirmation prompt and optional restart flow for Full Network Reset
+- ✅ Menu expanded to 9 options; Exit moved to Option 9
 
 ### Version 1.0
 
