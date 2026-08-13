@@ -21,7 +21,7 @@ call :AdapterMenu
 :Menu
 cls
 echo ==========================================================
-echo                  Dev-Fahim-Code DNS Tool
+echo                DNS_Switcher_Tool(v_0.2)
 :: Print the GitHub link in Blue using PowerShell
 powershell -NoProfile -Command "Write-Host '             https://github.com/dev-fahim-code' -ForegroundColor Blue"
 echo ==========================================================
@@ -36,9 +36,10 @@ echo 4. Quad9 DNS (Best for Security ^& Threat Prevention)
 echo 5. Ping Test All DNS Servers
 echo 6. Change Network Adapter
 echo 7. Reset DNS to Automatic (DHCP)
-echo 8. Exit
+echo 8. Full Network Reset (Winsock, TCP/IP, IP Release/Renew, Flush DNS)
+echo 9. Exit
 echo.
-set /p choice="Select an option (1-8): "
+set /p choice="Select an option (1-9): "
 
 if "%choice%"=="1" goto CF
 if "%choice%"=="2" goto Google
@@ -47,7 +48,8 @@ if "%choice%"=="4" goto Quad9
 if "%choice%"=="5" goto PingAll
 if "%choice%"=="6" goto ChangeAdapter
 if "%choice%"=="7" goto Reset
-if "%choice%"=="8" exit /b
+if "%choice%"=="8" goto FullReset
+if "%choice%"=="9" exit /b
 goto Menu
 
 :CF
@@ -143,6 +145,66 @@ netsh interface ipv6 set dnsservers name="%adapter%" dhcp >nul 2>&1
 echo DNS successfully reset to Automatic!
 echo.
 call :ShowCurrentDNS
+pause
+goto Menu
+
+:: ==========================================================
+::  Full network reset: Winsock, TCP/IP stack, IP lease,
+::  and DNS resolver cache. Fixes most "no internet /
+::  can't connect" issues that a simple DNS change can't.
+:: ==========================================================
+:FullReset
+cls
+echo ==========================================================
+echo                 Full Network Reset
+echo ==========================================================
+echo.
+echo This will run, in order:
+echo   1. netsh winsock reset      (fix connection failures)
+echo   2. netsh int ip reset       (repair TCP/IP stack)
+echo   3. ipconfig /release        (drop current IP)
+echo   4. ipconfig /renew          (request new IP)
+echo   5. ipconfig /flushdns       (clear DNS cache)
+echo.
+echo Your network connection will drop briefly during this
+echo process. A RESTART is recommended afterward so the
+echo Winsock and TCP/IP changes fully take effect.
+echo.
+set /p confirm="Proceed with Full Network Reset? (Y/N): "
+if /i not "%confirm%"=="Y" goto Menu
+
+echo.
+echo [1/5] Resetting Winsock catalog...
+netsh winsock reset >nul 2>&1
+
+echo [2/5] Resetting TCP/IP stack...
+netsh int ip reset >nul 2>&1
+
+echo [3/5] Releasing current IP address...
+ipconfig /release >nul 2>&1
+
+echo [4/5] Renewing IP address...
+ipconfig /renew >nul 2>&1
+
+echo [5/5] Flushing DNS resolver cache...
+ipconfig /flushdns >nul 2>&1
+
+echo.
+echo Full network reset complete!
+echo.
+echo ----------------------------------------------------------
+echo  A RESTART is strongly recommended now so the Winsock
+echo  and TCP/IP changes fully apply.
+echo ----------------------------------------------------------
+echo.
+set /p reboot="Restart the PC now? (Y/N): "
+if /i "%reboot%"=="Y" (
+    echo Restarting in 10 seconds - press Ctrl+C in this window to cancel...
+    shutdown /r /t 10 /c "Restarting to complete network reset..."
+) else (
+    echo Remember to restart manually when convenient.
+)
+echo.
 pause
 goto Menu
 
