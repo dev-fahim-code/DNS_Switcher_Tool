@@ -5,7 +5,12 @@ setlocal EnableDelayedExpansion
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo Requesting Administrative Privileges to change DNS settings...
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -Command "try { Start-Process -FilePath '%~f0' -Verb RunAs -ErrorAction Stop } catch { exit 1 }"
+    if !errorlevel! neq 0 (
+        echo.
+        echo Elevation was cancelled or failed. This tool requires Administrator rights to run.
+        pause
+    )
     exit /b
 )
 
@@ -21,7 +26,7 @@ call :AdapterMenu
 :Menu
 cls
 echo ==========================================================
-echo                DNS_Switcher_Tool(v_0.2)
+echo                DNS_Switcher_Tool(v_0.3)
 :: Print the GitHub link in Blue using PowerShell
 powershell -NoProfile -Command "Write-Host '             https://github.com/dev-fahim-code' -ForegroundColor Blue"
 echo ==========================================================
@@ -55,11 +60,22 @@ goto Menu
 :CF
 echo.
 echo Applying Cloudflare DNS...
+set "dnsError=0"
 netsh interface ipv4 set dnsservers name="%adapter%" static 1.1.1.1 primary validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
 netsh interface ipv4 add dnsservers name="%adapter%" 1.0.0.1 index=2 validate=no >nul 2>&1
-netsh interface ipv6 set dnsservers name="%adapter%" static 2606:4700:4700::1111 >nul 2>&1
-netsh interface ipv6 add dnsservers name="%adapter%" 2606:4700:4700::1001 index=2 >nul 2>&1
-echo DNS successfully changed to Cloudflare!
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 set dnsservers name="%adapter%" static 2606:4700:4700::1111 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 add dnsservers name="%adapter%" 2606:4700:4700::1001 index=2 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+echo.
+if "!dnsError!"=="1" (
+    echo WARNING: One or more DNS entries may not have applied. Verify the
+    echo adapter name below is still correct and check the results.
+) else (
+    echo DNS successfully changed to Cloudflare!
+)
 echo.
 call :ShowCurrentDNS
 pause
@@ -68,11 +84,22 @@ goto Menu
 :Google
 echo.
 echo Applying Google Public DNS...
+set "dnsError=0"
 netsh interface ipv4 set dnsservers name="%adapter%" static 8.8.8.8 primary validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
 netsh interface ipv4 add dnsservers name="%adapter%" 8.8.4.4 index=2 validate=no >nul 2>&1
-netsh interface ipv6 set dnsservers name="%adapter%" static 2001:4860:4860::8888 >nul 2>&1
-netsh interface ipv6 add dnsservers name="%adapter%" 2001:4860:4860::8844 index=2 >nul 2>&1
-echo DNS successfully changed to Google!
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 set dnsservers name="%adapter%" static 2001:4860:4860::8888 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 add dnsservers name="%adapter%" 2001:4860:4860::8844 index=2 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+echo.
+if "!dnsError!"=="1" (
+    echo WARNING: One or more DNS entries may not have applied. Verify the
+    echo adapter name below is still correct and check the results.
+) else (
+    echo DNS successfully changed to Google!
+)
 echo.
 call :ShowCurrentDNS
 pause
@@ -81,11 +108,22 @@ goto Menu
 :AdGuard
 echo.
 echo Applying AdGuard DNS...
+set "dnsError=0"
 netsh interface ipv4 set dnsservers name="%adapter%" static 94.140.14.14 primary validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
 netsh interface ipv4 add dnsservers name="%adapter%" 94.140.15.15 index=2 validate=no >nul 2>&1
-netsh interface ipv6 set dnsservers name="%adapter%" static 2a10:50c0::ad1:ff >nul 2>&1
-netsh interface ipv6 add dnsservers name="%adapter%" 2a10:50c0::ad2:ff index=2 >nul 2>&1
-echo DNS successfully changed to AdGuard!
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 set dnsservers name="%adapter%" static 2a10:50c0::ad1:ff validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 add dnsservers name="%adapter%" 2a10:50c0::ad2:ff index=2 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+echo.
+if "!dnsError!"=="1" (
+    echo WARNING: One or more DNS entries may not have applied. Verify the
+    echo adapter name below is still correct and check the results.
+) else (
+    echo DNS successfully changed to AdGuard!
+)
 echo.
 call :ShowCurrentDNS
 pause
@@ -94,11 +132,22 @@ goto Menu
 :Quad9
 echo.
 echo Applying Quad9 DNS...
+set "dnsError=0"
 netsh interface ipv4 set dnsservers name="%adapter%" static 9.9.9.9 primary validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
 netsh interface ipv4 add dnsservers name="%adapter%" 149.112.112.112 index=2 validate=no >nul 2>&1
-netsh interface ipv6 set dnsservers name="%adapter%" static 2620:fe::fe >nul 2>&1
-netsh interface ipv6 add dnsservers name="%adapter%" 2620:fe::9 index=2 >nul 2>&1
-echo DNS successfully changed to Quad9!
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 set dnsservers name="%adapter%" static 2620:fe::fe validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+netsh interface ipv6 add dnsservers name="%adapter%" 2620:fe::9 index=2 validate=no >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
+echo.
+if "!dnsError!"=="1" (
+    echo WARNING: One or more DNS entries may not have applied. Verify the
+    echo adapter name below is still correct and check the results.
+) else (
+    echo DNS successfully changed to Quad9!
+)
 echo.
 call :ShowCurrentDNS
 pause
@@ -121,6 +170,9 @@ echo Ping test complete. Lower average time is better.
 pause
 goto Menu
 
+:: NOTE: parsing relies on the English-language word "Average" in ping's
+:: summary line. On non-English Windows installs this line will not be
+:: found and every server will be reported as unreachable even if it responded.
 :DoPing
 setlocal
 set "pname=%~1"
@@ -140,9 +192,17 @@ goto :eof
 :Reset
 echo.
 echo Resetting DNS to Automatic (DHCP)...
+set "dnsError=0"
 netsh interface ipv4 set dnsservers name="%adapter%" dhcp >nul 2>&1
+if !errorlevel! neq 0 set "dnsError=1"
 netsh interface ipv6 set dnsservers name="%adapter%" dhcp >nul 2>&1
-echo DNS successfully reset to Automatic!
+if !errorlevel! neq 0 set "dnsError=1"
+echo.
+if "!dnsError!"=="1" (
+    echo WARNING: Reset may not have applied to both IPv4 and IPv6.
+) else (
+    echo DNS successfully reset to Automatic!
+)
 echo.
 call :ShowCurrentDNS
 pause
@@ -244,6 +304,9 @@ goto :eof
 
 :: ==========================================================
 ::  Finds every "Connected" interface reported by netsh
+::  NOTE: relies on the English-language word "Connected" from
+::  "netsh interface show interface". On non-English Windows
+::  installs this may find zero adapters.
 :: ==========================================================
 :EnumerateAdapters
 call :ClearAdapterVars
@@ -323,7 +386,10 @@ if %otherCount% GTR 0 (
 )
 echo.
 if %idx%==0 (
-    echo No connected adapters detected. Falling back to "Wi-Fi".
+    echo No connected adapters were detected automatically.
+    echo Falling back to the name "Wi-Fi" - if your real adapter uses a
+    echo different name, e.g. "Wi-Fi 2" or "WLAN", DNS changes below will
+    echo silently fail. Use option 6, "Change Network Adapter", to re-scan.
     set "adapter=Wi-Fi"
     pause
     goto :eof
