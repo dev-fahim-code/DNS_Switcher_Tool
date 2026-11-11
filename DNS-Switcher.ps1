@@ -7,7 +7,7 @@
 #   - FIXED: providers without IPv6 left the previous IPv6 resolver active.
 #   - FIXED: unhandled errors closed the elevated window instantly.
 #   - FIXED: single-adapter systems could break adapter selection.
-#   - NEW:   ASCII-art "DNS SWITCHER" banner in the header.
+#   - NEW:   ASCII-art "DNS SWITCHER" banner in the header (script file is pure ASCII).
 #   - NEW:   real ICMP ping + UDP DNS benchmark, all providers in parallel, ~45 seconds.
 
 $ErrorActionPreference = "Stop"
@@ -57,11 +57,26 @@ $script:Providers = [ordered]@{
     }
 }
 
-$script:Banner = @(
-    '░█▀▀▄ ░█▄─░█ ░█▀▀▀█    ░█▀▀▀█ ░█──░█ ▀█▀ ▀▀█▀▀ ░█▀▀█ ░█─░█ ░█▀▀▀ ░█▀▀█',
-    '░█─░█ ░█░█░█ ─▀▀▀▄▄    ─▀▀▀▄▄ ░█░█░█ ░█─ ─░█── ░█─── ░█▀▀█ ░█▀▀▀ ░█▄▄▀',
-    '░█▄▄▀ ░█──▀█ ░█▄▄▄█    ░█▄▄▄█ ░█▄▀▄█ ▄█▄ ─░█── ░█▄▄█ ░█─░█ ░█▄▄▄ ░█─░█'
+function ConvertTo-BannerRow {
+    # The banner is stored as plain ASCII and turned into block characters here, so the
+    # script works no matter how the file is saved (with or without a UTF-8 BOM).
+    #   .  light shade    #  full block    ^  upper half block    _  lower half block    -  line
+    param([string]$Template)
+    $map = @{ '.' = [char]0x2591; '#' = [char]0x2588; '^' = [char]0x2580; '_' = [char]0x2584; '-' = [char]0x2500 }
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($ch in $Template.ToCharArray()) {
+        $key = [string]$ch
+        if ($map.ContainsKey($key)) { [void]$sb.Append([char]$map[$key]) } else { [void]$sb.Append($ch) }
+    }
+    return $sb.ToString()
+}
+
+$script:BannerTemplate = @(
+    '.#^^_ .#_-.# .#^^^#    .#^^^# .#--.# ^#^ ^^#^^ .#^^# .#-.# .#^^^ .#^^#',
+    '.#-.# .#.#.# -^^^__    -^^^__ .#.#.# .#- -.#-- .#--- .#^^# .#^^^ .#__^',
+    '.#__^ .#--^# .#___#    .#___# .#_^_# _#_ -.#-- .#__# .#-.# .#___ .#-.#'
 )
+$script:Banner = @($script:BannerTemplate | ForEach-Object { ConvertTo-BannerRow -Template $_ })
 
 function Write-Header {
     Clear-Host
