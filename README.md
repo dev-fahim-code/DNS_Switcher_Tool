@@ -34,6 +34,16 @@ No installer, no dependencies, no network access except the tests described belo
 4. Choose your network adapter (the one marked `[Up]` that you use for internet).
 5. Type a menu number and press Enter.
 
+**Prefer git?** Clone the repository instead of downloading the ZIP:
+
+```
+git clone https://github.com/dev-fahim-code/DNS_Switcher_Tool.git
+cd DNS_Switcher_Tool
+.\Run-DNS-Switcher.bat
+```
+
+To get later updates, run `git pull` inside that folder.
+
 A typical session:
 
 1. Option **7**: run the ping benchmark and see which provider is fastest for you.
@@ -139,6 +149,7 @@ This tool changes network settings, so a few habits are worth following.
 ## Changelog
 
 **v3.1**
+- Now a PowerShell tool, replacing the earlier batch-script version (v0.3)
 - Fixed: restoring a backup whose DNS was automatic always failed
 - Fixed: choosing a provider without IPv6 left the previous IPv6 resolver active (all six providers now include IPv6)
 - Fixed: unexpected errors closed the window before the message could be read
