@@ -1,0 +1,8 @@
+# DNS backups contain your adapter ID and DNS settings - never commit them
+DNS-Backups/
+
+# Windows / editor clutter
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
